@@ -17,8 +17,7 @@ import {
   MessageSquare,
   BarChart3,
   History,
-  Download,
-  Share
+  Download
 } from 'lucide-react';
 
 import Dashboard from './pages/Dashboard.tsx';
@@ -58,7 +57,6 @@ const App: React.FC = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallBtn, setShowInstallBtn] = useState(false);
-  const [showIosTip, setShowIosTip] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('ef_theme');
     return saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -76,21 +74,18 @@ const App: React.FC = () => {
     }
   }, [isDarkMode]);
 
+  // Lógica para detectar se o PWA pode ser instalado
   useEffect(() => {
-    // Detecção Android/Chrome
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
       setShowInstallBtn(true);
     });
 
-    // Detecção iOS
-    const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-    const isStandalone = (window.navigator as any).standalone === true || window.matchMedia('(display-mode: standalone)').matches;
-    
-    if (isIos && !isStandalone) {
-      setShowIosTip(true);
-    }
+    window.addEventListener('appinstalled', () => {
+      setShowInstallBtn(false);
+      setDeferredPrompt(null);
+    });
   }, []);
 
   const handleInstallClick = async () => {
@@ -122,14 +117,14 @@ const App: React.FC = () => {
     <div className="min-h-screen flex flex-col md:flex-row bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200">
       
       {/* Header Mobile */}
-      <header className="md:hidden bg-[#0f172a] border-b border-slate-800 px-5 py-4 flex items-center justify-between sticky top-0 z-40 safe-top">
+      <header className="md:hidden bg-[#0f172a] border-b border-slate-800 px-5 py-4 flex items-center justify-between sticky top-0 z-40">
         <div className="flex items-center gap-2">
           <Box className="text-indigo-500" size={24} />
           <span className="font-black text-lg tracking-tighter text-white uppercase italic">Perfumaria Digital</span>
         </div>
         <div className="flex items-center gap-2">
           {showInstallBtn && (
-            <button onClick={handleInstallClick} className="p-2 text-indigo-400 animate-pulse">
+            <button onClick={handleInstallClick} className="p-2 text-indigo-400 animate-bounce">
               <Download size={20} />
             </button>
           )}
@@ -149,7 +144,7 @@ const App: React.FC = () => {
         ${isCollapsed ? 'md:w-20' : 'md:w-64'}
         ${isMenuOpen ? 'translate-x-0 w-[280px] shadow-2xl' : '-translate-x-full md:translate-x-0'}
       `}>
-        <div className={`p-5 border-b border-slate-800 flex items-center bg-[#0f172a] text-white transition-all ${isCollapsed ? 'justify-center' : 'justify-between'} safe-top`}>
+        <div className={`p-5 border-b border-slate-800 flex items-center bg-[#0f172a] text-white transition-all ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
            <div className="flex items-center gap-2">
             <Box className="text-indigo-500 flex-shrink-0" size={24} />
             {!isCollapsed && <span className="font-black text-lg uppercase italic tracking-tighter">Perfumaria Digital</span>}
@@ -173,7 +168,7 @@ const App: React.FC = () => {
           ))}
         </nav>
 
-        <div className="absolute bottom-6 left-0 w-full px-4 space-y-2 safe-bottom">
+        <div className="absolute bottom-6 left-0 w-full px-4 space-y-2">
           {showInstallBtn && !isCollapsed && (
             <button 
               onClick={handleInstallClick}
@@ -200,7 +195,7 @@ const App: React.FC = () => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto min-h-screen-ios safe-bottom">
+      <main className="flex-1 overflow-y-auto min-h-screen-ios">
         <div className="max-w-7xl mx-auto p-4 md:p-10">
           <Routes>
             <Route path="/" element={<Dashboard />} />
@@ -214,27 +209,6 @@ const App: React.FC = () => {
           </Routes>
         </div>
       </main>
-
-      {/* iOS Installation Tip */}
-      {showIosTip && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-sm bg-indigo-600 text-white p-4 rounded-2xl shadow-2xl animate-in slide-in-from-bottom-10 duration-500">
-          <div className="flex items-start gap-4">
-            <div className="bg-white/20 p-2 rounded-xl">
-              <Share size={24} className="text-white" />
-            </div>
-            <div className="flex-1">
-              <div className="flex justify-between items-center mb-1">
-                <h4 className="text-[10px] font-black uppercase tracking-widest">Instalar no iPhone</h4>
-                <button onClick={() => setShowIosTip(false)}><X size={16} /></button>
-              </div>
-              <p className="text-[11px] font-medium leading-relaxed opacity-90">
-                Toque em <span className="font-black">Compartilhar</span> e depois em <span className="font-black">Adicionar à Tela de Início</span> para usar como Aplicativo.
-              </p>
-            </div>
-          </div>
-          <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-indigo-600 rotate-45"></div>
-        </div>
-      )}
 
       {isMenuOpen && (
         <div 
