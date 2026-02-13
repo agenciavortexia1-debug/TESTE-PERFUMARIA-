@@ -13,6 +13,7 @@ import {
   ChevronRight,
   Sun,
   Moon,
+  Box,
   MessageSquare,
   BarChart3,
   History,
@@ -27,38 +28,6 @@ import Receivables from './pages/Receivables.tsx';
 import FollowUp from './pages/FollowUp.tsx';
 import KPI from './pages/KPI.tsx';
 import SalesHistory from './pages/SalesHistory.tsx';
-
-// Novo componente de Logotipo Customizado conforme descrição
-const BrandLogo: React.FC<{ size?: number; className?: string }> = ({ size = 24, className = "" }) => (
-  <svg 
-    width={size} 
-    height={size} 
-    viewBox="0 0 100 100" 
-    fill="none" 
-    xmlns="http://www.w3.org/2000/svg"
-    className={className}
-  >
-    {/* Hexágono Vertical com Borda Dupla */}
-    <path d="M50 5 L93 30 L93 70 L50 95 L7 70 L7 30 Z" stroke="currentColor" strokeWidth="2.5" />
-    <path d="M50 12 L86 32 L86 68 L50 88 L14 68 L14 32 Z" stroke="currentColor" strokeWidth="1" opacity="0.7" />
-    
-    {/* Frasco de Fragrância */}
-    <path d="M38 72 C38 82 62 82 62 72 L62 55 C62 50 38 50 38 55 Z" stroke="currentColor" strokeWidth="2" />
-    
-    {/* Textura de Diamante/Losango no frasco */}
-    <path d="M40 55 L60 75 M40 65 L55 80 M45 52 L62 68 M60 55 L40 75 M60 65 L45 80 M55 52 L38 68" stroke="currentColor" strokeWidth="0.5" opacity="0.5" />
-    
-    {/* Atomizador (Mecanismo e Pera) */}
-    <rect x="47" y="46" width="6" height="4" fill="currentColor" />
-    <path d="M53 48 Q68 48 68 58" stroke="currentColor" strokeWidth="1.5" fill="none" />
-    <circle cx="68" cy="65" r="5" fill="currentColor" />
-    
-    {/* Efeito de Spray */}
-    <line x1="42" y1="42" x2="38" y2="38" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    <line x1="36" y1="46" x2="31" y2="46" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    <circle cx="34" cy="40" r="1" fill="currentColor" />
-  </svg>
-);
 
 const NavItem: React.FC<{ 
   to: string; 
@@ -105,6 +74,7 @@ const App: React.FC = () => {
     }
   }, [isDarkMode]);
 
+  // Lógica para detectar se o PWA pode ser instalado
   useEffect(() => {
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
@@ -149,7 +119,7 @@ const App: React.FC = () => {
       {/* Header Mobile */}
       <header className="md:hidden bg-[#0f172a] border-b border-slate-800 px-5 py-4 flex items-center justify-between sticky top-0 z-40">
         <div className="flex items-center gap-2">
-          <BrandLogo size={28} className="text-[#E2D1B1]" />
+          <Box className="text-indigo-500" size={24} />
           <span className="font-black text-lg tracking-tighter text-white uppercase italic">Perfumaria Digital</span>
         </div>
         <div className="flex items-center gap-2">
@@ -176,7 +146,7 @@ const App: React.FC = () => {
       `}>
         <div className={`p-5 border-b border-slate-800 flex items-center bg-[#0f172a] text-white transition-all ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
            <div className="flex items-center gap-2">
-            <BrandLogo size={24} className="text-[#E2D1B1] flex-shrink-0" />
+            <Box className="text-indigo-500 flex-shrink-0" size={24} />
             {!isCollapsed && <span className="font-black text-lg uppercase italic tracking-tighter">Perfumaria Digital</span>}
           </div>
           <button onClick={() => setIsMenuOpen(false)} className="md:hidden p-2 text-slate-400 hover:text-white">

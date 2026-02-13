@@ -2,21 +2,21 @@
 {
   "name": "Perfumaria Digital Pro",
   "short_name": "Perfumaria",
-  "description": "Sistema de gestão offline-first para perfumarias vintage.",
+  "description": "Sistema de gestão offline-first para perfumarias.",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0f172a",
-  "theme_color": "#0f172a",
+  "theme_color": "#4f46e5",
   "icons": [
     {
-      "src": "data:image/svg+xml,%3Csvg width='192' height='192' viewBox='0 0 100 100' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100' height='100' fill='%230f172a'/%3E%3Cpath d='M50 5 L93 30 L93 70 L50 95 L7 70 L7 30 Z' stroke='%23E2D1B1' stroke-width='2.5' /%3E%3Cpath d='M50 12 L86 32 L86 68 L50 88 L14 68 L14 32 Z' stroke='%23E2D1B1' stroke-width='1' opacity='0.7' /%3E%3Cpath d='M38 72 C38 82 62 82 62 72 L62 55 C62 50 38 50 38 55 Z' stroke='%23E2D1B1' stroke-width='2' /%3E%3Cpath d='M40 55 L60 75 M40 65 L55 80 M45 52 L62 68 M60 55 L40 75 M60 65 L45 80 M55 52 L38 68' stroke='%23E2D1B1' stroke-width='0.5' opacity='0.5' /%3E%3Crect x='47' y='46' width='6' height='4' fill='%23E2D1B1' /%3E%3Cpath d='M53 48 Q68 48 68 58' stroke='%23E2D1B1' stroke-width='1.5' fill='none' /%3E%3Ccircle cx='68' cy='65' r='5' fill='%23E2D1B1' /%3E%3Cline x1='42' y1='42' x2='38' y2='38' stroke='%23E2D1B1' stroke-width='1.5' stroke-linecap='round' /%3E%3Cline x1='36' y1='46' x2='31' y2='46' stroke='%23E2D1B1' stroke-width='1.5' stroke-linecap='round' /%3E%3Ccircle cx='34' cy='40' r='1' fill='%23E2D1B1' /%3E%3C/svg%3E",
+      "src": "https://cdn-icons-png.flaticon.com/512/3062/3062250.png",
       "sizes": "192x192",
-      "type": "image/svg+xml"
+      "type": "image/png"
     },
     {
-      "src": "data:image/svg+xml,%3Csvg width='512' height='512' viewBox='0 0 100 100' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100' height='100' fill='%230f172a'/%3E%3Cpath d='M50 5 L93 30 L93 70 L50 95 L7 70 L7 30 Z' stroke='%23E2D1B1' stroke-width='2.5' /%3E%3Cpath d='M50 12 L86 32 L86 68 L50 88 L14 68 L14 32 Z' stroke='%23E2D1B1' stroke-width='1' opacity='0.7' /%3E%3Cpath d='M38 72 C38 82 62 82 62 72 L62 55 C62 50 38 50 38 55 Z' stroke='%23E2D1B1' stroke-width='2' /%3E%3Cpath d='M40 55 L60 75 M40 65 L55 80 M45 52 L62 68 M60 55 L40 75 M60 65 L45 80 M55 52 L38 68' stroke='%23E2D1B1' stroke-width='0.5' opacity='0.5' /%3E%3Crect x='47' y='46' width='6' height='4' fill='%23E2D1B1' /%3E%3Cpath d='M53 48 Q68 48 68 58' stroke='%23E2D1B1' stroke-width='1.5' fill='none' /%3E%3Ccircle cx='68' cy='65' r='5' fill='%23E2D1B1' /%3E%3Cline x1='42' y1='42' x2='38' y2='38' stroke='%23E2D1B1' stroke-width='1.5' stroke-linecap='round' /%3E%3Cline x1='36' y1='46' x2='31' y2='46' stroke='%23E2D1B1' stroke-width='1.5' stroke-linecap='round' /%3E%3Ccircle cx='34' cy='40' r='1' fill='%23E2D1B1' /%3E%3C/svg%3E",
+      "src": "https://cdn-icons-png.flaticon.com/512/3062/3062250.png",
       "sizes": "512x512",
-      "type": "image/svg+xml"
+      "type": "image/png"
     }
   ]
 }
