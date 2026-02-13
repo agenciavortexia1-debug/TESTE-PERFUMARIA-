@@ -5,7 +5,6 @@ import {
   LayoutDashboard, 
   Users, 
   Package, 
-  ShoppingCart, 
   ShoppingBag,
   Clock, 
   Menu, 
@@ -17,7 +16,8 @@ import {
   Box,
   MessageSquare,
   BarChart3,
-  History
+  History,
+  Download
 } from 'lucide-react';
 
 import Dashboard from './pages/Dashboard.tsx';
@@ -55,6 +55,8 @@ const NavItem: React.FC<{
 const App: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showInstallBtn, setShowInstallBtn] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('ef_theme');
     return saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -72,6 +74,30 @@ const App: React.FC = () => {
     }
   }, [isDarkMode]);
 
+  // Lógica para detectar se o PWA pode ser instalado
+  useEffect(() => {
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstallBtn(true);
+    });
+
+    window.addEventListener('appinstalled', () => {
+      setShowInstallBtn(false);
+      setDeferredPrompt(null);
+    });
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setShowInstallBtn(false);
+    }
+    setDeferredPrompt(null);
+  };
+
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const toggleSidebar = () => setIsCollapsed(!isCollapsed);
   const toggleTheme = () => setIsDarkMode(!isDarkMode);
@@ -79,7 +105,6 @@ const App: React.FC = () => {
   const navigation = [
     { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/kpi', icon: BarChart3, label: 'Desempenho' },
-    // Fix: Using ShoppingBag icon which is now imported
     { to: '/vendas', icon: ShoppingBag, label: 'PDV' },
     { to: '/historico', icon: History, label: 'Histórico' },
     { to: '/produtos', icon: Package, label: 'Estoque' },
@@ -98,6 +123,11 @@ const App: React.FC = () => {
           <span className="font-black text-lg tracking-tighter text-white uppercase italic">Perfumaria Digital</span>
         </div>
         <div className="flex items-center gap-2">
+          {showInstallBtn && (
+            <button onClick={handleInstallClick} className="p-2 text-indigo-400 animate-bounce">
+              <Download size={20} />
+            </button>
+          )}
           <button onClick={toggleTheme} className="p-2 text-slate-400 hover:text-white transition-colors">
             {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
           </button>
@@ -139,6 +169,15 @@ const App: React.FC = () => {
         </nav>
 
         <div className="absolute bottom-6 left-0 w-full px-4 space-y-2">
+          {showInstallBtn && !isCollapsed && (
+            <button 
+              onClick={handleInstallClick}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-indigo-600/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-600 hover:text-white transition-all mb-4"
+            >
+              <Download size={20} />
+              <span className="font-black text-[10px] uppercase tracking-widest">Instalar App</span>
+            </button>
+          )}
           <button 
             onClick={toggleTheme}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ${isCollapsed ? 'justify-center' : ''}`}
