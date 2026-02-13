@@ -2,7 +2,7 @@
 {
   "name": "Perfumaria Digital Pro",
   "short_name": "Perfumaria",
-  "description": "Sistema de gestão offline-first para perfumarias.",
+  "description": "Sistema de gestão inteligente para perfumarias.",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0f172a",
@@ -11,12 +11,20 @@
     {
       "src": "https://cdn-icons-png.flaticon.com/512/3062/3062250.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "https://cdn-icons-png.flaticon.com/512/3062/3062250.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3062/3062250.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
