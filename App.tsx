@@ -80,6 +80,7 @@ const AppContent: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [settings, setSettings] = useState<AppSettings>(DB.getSettings());
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('ef_theme');
     return saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -88,7 +89,6 @@ const AppContent: React.FC = () => {
   const location = useLocation();
 
   const updateDynamicManifest = (currentSettings: AppSettings) => {
-    // Cria um manifesto dinâmico para que o ícone de instalação reflita o upload do usuário
     const iconUrl = currentSettings.appIconUrl || 'https://cdn-icons-png.flaticon.com/512/3062/3062250.png';
     const manifest = {
       "name": currentSettings.systemName,
@@ -115,17 +115,22 @@ const AppContent: React.FC = () => {
   };
 
   useEffect(() => {
+    // Escuta evento de instalação PWA
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
     const handleSettingsChange = () => {
       const updatedSettings = DB.getSettings();
       setSettings(updatedSettings);
       document.title = updatedSettings.systemName;
       
-      // Atualiza Favicon
       if (updatedSettings.appIconUrl) {
         const links = document.querySelectorAll("link[rel*='icon']");
         links.forEach(link => { (link as HTMLLinkElement).href = updatedSettings.appIconUrl; });
-        
-        // Atualiza Apple Touch Icon
         const appleIcon = document.querySelector("link[rel='apple-touch-icon']");
         if (appleIcon) appleIcon.setAttribute('href', updatedSettings.appIconUrl);
       }
@@ -135,7 +140,11 @@ const AppContent: React.FC = () => {
 
     window.addEventListener('settingsUpdated', handleSettingsChange);
     handleSettingsChange();
-    return () => window.removeEventListener('settingsUpdated', handleSettingsChange);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('settingsUpdated', handleSettingsChange);
+    };
   }, []);
 
   useEffect(() => {
@@ -147,6 +156,15 @@ const AppContent: React.FC = () => {
       localStorage.setItem('ef_theme', 'light');
     }
   }, [isDarkMode]);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
+    }
+  };
 
   const handleLogin = () => {
     setIsAuthenticated(true);
@@ -179,7 +197,6 @@ const AppContent: React.FC = () => {
   ];
 
   const SystemLogo = () => {
-    // Prioriza Logo da Sidebar, se não houver, usa o Ícone do App, se não houver, usa o SVG padrão
     const displayImg = settings.logoUrl || settings.appIconUrl;
     if (displayImg) {
       return <img src={displayImg} alt="Logo" className="w-8 h-8 object-contain rounded-md" />;
@@ -239,7 +256,18 @@ const AppContent: React.FC = () => {
           ))}
         </nav>
 
-        <div className="absolute bottom-6 left-0 w-full px-4 space-y-2">
+        <div className="absolute bottom-6 left-0 w-full px-4 space-y-1">
+          {/* Botão de Download PWA - Só aparece se disponível */}
+          {deferredPrompt && (
+            <button 
+              onClick={handleInstallClick}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/10 hover:bg-indigo-100 dark:hover:bg-indigo-900/20 transition-all mb-1 ${isCollapsed ? 'justify-center' : ''}`}
+            >
+              <Download size={20} />
+              {!isCollapsed && <span className="font-black text-[10px] uppercase tracking-widest">Baixar App</span>}
+            </button>
+          )}
+
           <button 
             onClick={handleLogout}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/10 ${isCollapsed ? 'justify-center' : ''}`}
