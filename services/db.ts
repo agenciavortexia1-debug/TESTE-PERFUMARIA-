@@ -1,11 +1,12 @@
 
-import { Customer, Product, Sale, Installment, PaymentStatus, PaymentMethod } from '../types';
+import { Customer, Product, Sale, Installment, PaymentStatus, PaymentMethod, AppSettings } from '../types';
 
 const STORAGE_KEYS = {
   CUSTOMERS: 'ef_customers',
   PRODUCTS: 'ef_products',
   SALES: 'ef_sales',
   INSTALLMENTS: 'ef_installments',
+  SETTINGS: 'ef_settings',
   INITIALIZED: 'ef_initialized'
 };
 
@@ -18,7 +19,6 @@ const set = <T,>(key: string, value: T): void => {
   localStorage.setItem(key, JSON.stringify(value));
 };
 
-// Função para gerar datas relativas
 const daysAgo = (days: number) => {
   const d = new Date();
   d.setDate(d.getDate() - days);
@@ -38,12 +38,18 @@ export const DB = {
   getInstallments: () => get<Installment[]>(STORAGE_KEYS.INSTALLMENTS, []),
   saveInstallments: (data: Installment[]) => set(STORAGE_KEYS.INSTALLMENTS, data),
 
+  getSettings: (): AppSettings => get<AppSettings>(STORAGE_KEYS.SETTINGS, {
+    systemName: 'Perfumaria Digital',
+    logoUrl: '',
+    appIconUrl: ''
+  }),
+  saveSettings: (data: AppSettings) => set(STORAGE_KEYS.SETTINGS, data),
+
   addSale: (sale: Sale, installments: Installment[]) => {
     const sales = DB.getSales();
     const insts = DB.getInstallments();
     const products = DB.getProducts();
 
-    // Update stock
     const updatedProducts = products.map(p => {
       const item = sale.items.find(i => i.productId === p.id);
       if (item) {
@@ -81,65 +87,10 @@ export const DB = {
     const sampleCustomers: Customer[] = [
       { id: 'c1', name: 'João Silva', email: 'joao@email.com', phone: '(11) 98888-7777', cpf: '123.456.789-00', address: 'Rua das Flores, 123', createdAt: daysAgo(60) },
       { id: 'c2', name: 'Maria Oliveira', email: 'maria@email.com', phone: '(11) 97777-6666', cpf: '987.654.321-11', address: 'Av. Paulista, 1500', createdAt: daysAgo(45) },
-      { id: 'c3', name: 'Carlos Souza', email: 'carlos@email.com', phone: '(21) 96666-5555', cpf: '456.789.123-22', address: 'Rua Copacabana, 45', createdAt: daysAgo(30) },
-      { id: 'c4', name: 'Ana Santos', email: 'ana@email.com', phone: '(31) 95555-4444', cpf: '321.654.987-33', address: 'Praça da Liberdade, 10', createdAt: daysAgo(10) },
-    ];
-
-    const sampleSales: Sale[] = [
-      {
-        id: 's1',
-        customerId: 'c1',
-        customerName: 'João Silva',
-        date: daysAgo(35), // Mais de 28 dias (para aparecer no Acompanhamento)
-        paymentMethod: PaymentMethod.CASH,
-        installmentsCount: 1,
-        total: 450,
-        items: [{ productId: 'p1', productName: 'Eternity Blue', quantity: 1, unitPrice: 450, total: 450 }]
-      },
-      {
-        id: 's2',
-        customerId: 'c2',
-        customerName: 'Maria Oliveira',
-        date: daysAgo(15),
-        paymentMethod: PaymentMethod.INSTALLMENTS,
-        installmentsCount: 3,
-        total: 1240,
-        items: [
-          { productId: 'p3', productName: 'Good Girl', quantity: 2, unitPrice: 620, total: 1240 }
-        ]
-      },
-      {
-        id: 's3',
-        customerId: 'c3',
-        customerName: 'Carlos Souza',
-        date: daysAgo(5),
-        paymentMethod: PaymentMethod.PIX,
-        installmentsCount: 1,
-        total: 890,
-        items: [{ productId: 'p2', productName: 'Sauvage Elixir', quantity: 1, unitPrice: 890, total: 890 }]
-      },
-      {
-        id: 's4',
-        customerId: 'c4',
-        customerName: 'Ana Santos',
-        date: daysAgo(1),
-        paymentMethod: PaymentMethod.CREDIT_CARD,
-        installmentsCount: 1,
-        total: 750,
-        items: [{ productId: 'p4', productName: 'Bleu de Chanel', quantity: 1, unitPrice: 750, total: 750 }]
-      }
-    ];
-
-    const sampleInstallments: Installment[] = [
-      { id: 'i1', saleId: 's2', number: 1, amount: 413.33, dueDate: daysAgo(-15), status: PaymentStatus.PAID, paidAt: daysAgo(10) },
-      { id: 'i2', saleId: 's2', number: 2, amount: 413.33, dueDate: daysAgo(-45), status: PaymentStatus.PENDING },
-      { id: 'i3', saleId: 's2', number: 3, amount: 413.34, dueDate: daysAgo(-75), status: PaymentStatus.PENDING },
     ];
 
     DB.saveProducts(sampleProducts);
     DB.saveCustomers(sampleCustomers);
-    DB.saveSales(sampleSales);
-    DB.saveInstallments(sampleInstallments);
     localStorage.setItem(STORAGE_KEYS.INITIALIZED, 'true');
   }
 };
