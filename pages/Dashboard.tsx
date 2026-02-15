@@ -6,7 +6,9 @@ import {
   Package, 
   Calendar as CalendarIcon,
   X,
-  History
+  History,
+  PieChart as PieIcon,
+  BarChart3
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -27,7 +29,28 @@ import StatCard from '../components/StatCard.tsx';
 import DateRangePicker from '../components/DateRangePicker.tsx';
 import { useNavigate } from 'react-router-dom';
 
-const COLORS = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'];
+const COLORS = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#ec4899'];
+
+// Função para renderizar rótulos externos no gráfico de rosca (igual à imagem enviada)
+const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }: any) => {
+  const RADIAN = Math.PI / 180;
+  const radius = outerRadius + 25;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+  return (
+    <text 
+      x={x} 
+      y={y} 
+      fill="#94a3b8" 
+      textAnchor={x > cx ? 'start' : 'end'} 
+      dominantBaseline="central"
+      className="text-[9px] font-black uppercase italic tracking-tighter"
+    >
+      {`${name}: ${(percent * 100).toFixed(1)}%`}
+    </text>
+  );
+};
 
 const Dashboard: React.FC = () => {
   const [dateRange, setDateRange] = useState({ 
@@ -55,14 +78,26 @@ const Dashboard: React.FC = () => {
         .reduce((acc, i) => acc + i.amount, 0);
       const lowStockItems = products.filter(p => p.stock <= p.minStock).length;
 
-      const categories: Record<string, number> = {};
-      products.forEach(p => {
-        categories[p.category] = (categories[p.category] || 0) + 1;
+      // Cálculo de Distribuição por Categoria (Mix)
+      const categories: Record<string, { count: number, revenue: number }> = {};
+      sales.forEach(sale => {
+        sale.items.forEach(item => {
+          const product = products.find(p => p.id === item.productId);
+          const cat = product?.category || 'Outros';
+          if (!categories[cat]) categories[cat] = { count: 0, revenue: 0 };
+          categories[cat].count += item.quantity;
+          categories[cat].revenue += item.total;
+        });
       });
-      const categoryDistribution = Object.entries(categories).map(([name, value]) => ({ name, value }));
+
+      const categoryDistribution = Object.entries(categories).map(([name, data]) => ({ 
+        name, 
+        value: data.revenue,
+        units: data.count 
+      })).sort((a, b) => b.value - a.value);
 
       const daysCount = Math.max(1, Math.ceil((dateRange.end.getTime() - dateRange.start.getTime()) / (1000 * 60 * 60 * 24)));
-      const displayDays = Math.min(7, daysCount);
+      const displayDays = Math.min(10, daysCount);
       
       const chartData = Array.from({ length: displayDays }).map((_, i) => {
         const d = new Date(dateRange.end);
@@ -94,7 +129,7 @@ const Dashboard: React.FC = () => {
 
   if (!stats) return null;
 
-  const weeklySalesData = stats.salesData.filter((d: any) => d.value > 0);
+  const weeklySalesData = stats.salesData;
 
   const getModalContent = () => {
     switch (activeModal) {
@@ -177,61 +212,87 @@ const Dashboard: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Gráfico Frequência de Vendas com Altura Aumentada e Labels Internos Brancos */}
         <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-6 rounded-md border border-slate-200 dark:border-slate-800 shadow-sm">
-          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-8">Frequência de Vendas</h3>
-          <div className="h-80 w-full">
-            {weeklySalesData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={weeklySalesData}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" opacity={0.3} />
-                  <XAxis 
-                    dataKey="date" 
-                    tickFormatter={(val) => val.split('-')[2]} 
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 'bold' }}
+          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-8 flex items-center gap-2">
+            <BarChart3 size={16} className="text-indigo-500" />
+            Frequência de Vendas (Qtd.)
+          </h3>
+          <div className="h-[500px] w-full"> {/* Aumento da altura para ocupar o espaço marcado */}
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={weeklySalesData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" opacity={0.3} />
+                <XAxis 
+                  dataKey="date" 
+                  tickFormatter={(val) => val.split('-')[2] + '/' + val.split('-')[1]} 
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 'bold' }}
+                />
+                <YAxis hide />
+                <Tooltip 
+                  cursor={{ fill: 'rgba(79, 70, 229, 0.05)' }}
+                  contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '4px', fontSize: '10px' }}
+                />
+                <Bar dataKey="value" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={40}>
+                  <LabelList 
+                    dataKey="value" 
+                    position="insideTop" 
+                    offset={10}
+                    style={{ fill: '#ffffff', fontSize: '12px', fontWeight: '900' }}
                   />
-                  <YAxis hide />
-                  <Tooltip 
-                    cursor={{ fill: 'rgba(79, 70, 229, 0.05)' }}
-                    contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '4px', fontSize: '10px' }}
-                  />
-                  <Bar dataKey="value" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={45}>
-                    <LabelList 
-                      dataKey="value" 
-                      position="top" 
-                      style={{ fill: '#94a3b8', fontSize: '9px', fontWeight: '900' }}
-                    />
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full flex items-center justify-center text-slate-300 uppercase font-black text-[10px] tracking-widest italic">Sem dados.</div>
-            )}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
+        {/* Gráfico Mix Categorias */}
         <div className="bg-white dark:bg-slate-900 p-6 rounded-md border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col">
-          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6">Mix Categorias</h3>
-          <div className="flex-1 flex flex-col items-center justify-center">
-            <ResponsiveContainer width="100%" height={240}>
+          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+            <PieIcon size={16} className="text-amber-500" />
+            Mix de Categorias (Receita)
+          </h3>
+          <div className="flex-1 flex flex-col items-center justify-center min-h-[300px]">
+            <ResponsiveContainer width="100%" height={260}>
               <PieChart>
                 <Pie
                   data={stats.categoryDistribution}
                   cx="50%"
                   cy="50%"
-                  innerRadius={60}
-                  outerRadius={90}
+                  innerRadius={55}
+                  outerRadius={75}
                   paddingAngle={5}
                   dataKey="value"
+                  label={renderCustomizedLabel}
+                  labelLine={{ stroke: '#94a3b8', strokeWidth: 1 }}
                 >
                   {stats.categoryDistribution.map((_: any, index: number) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} strokeWidth={0} />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip 
+                  formatter={(value: any) => `R$ ${Number(value).toFixed(2)}`}
+                  contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '4px', fontSize: '10px' }}
+                />
               </PieChart>
             </ResponsiveContainer>
+
+            {/* Legenda detalhada inferior */}
+            <div className="w-full mt-4 space-y-2">
+              {stats.categoryDistribution.map((item: any, i: number) => (
+                <div key={item.name} className="flex flex-col p-3 rounded-md bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }}></div>
+                    <span className="text-[10px] font-black text-slate-500 uppercase truncate tracking-widest">{item.name}</span>
+                  </div>
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-sm font-black text-slate-900 dark:text-white">R$ {item.value.toLocaleString('pt-BR')}</span>
+                    <span className="text-[8px] font-black text-slate-400 uppercase">{item.units} UNID.</span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>

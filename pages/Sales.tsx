@@ -167,7 +167,8 @@ const Sales: React.FC = () => {
         {/* Product Results Grid */}
         <div className="min-h-[200px]">
           {searchProduct.length === 0 && !selectedCustomer && cart.length === 0 ? (
-            <div className="py-12 flex flex-col items-center justify-center bg-white dark:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-800 rounded-lg text-center">
+            /* Oculto em dispositivos móveis conforme solicitado (hidden md:flex) */
+            <div className="hidden md:flex py-12 flex-col items-center justify-center bg-white dark:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-800 rounded-lg text-center">
               <Sparkles size={24} className="text-slate-300 mb-3" />
               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Aguardando busca de produtos...</p>
             </div>
