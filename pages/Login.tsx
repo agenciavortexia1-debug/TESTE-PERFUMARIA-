@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Lock, ArrowRight, ShieldCheck, AlertCircle } from 'lucide-react';
 import { DB } from '../services/db.ts';
+import { AppSettings } from '../types.ts';
 
 interface LoginProps {
   onLogin: () => void;
@@ -25,7 +26,15 @@ const BrandLogoDefault: React.FC<{ size?: number; className?: string }> = ({ siz
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState(false);
-  const settings = DB.getSettings();
+  const [settings, setSettings] = useState<AppSettings>(DB.getSettings());
+
+  useEffect(() => {
+    const handleSettingsChange = () => {
+      setSettings(DB.getSettings());
+    };
+    window.addEventListener('settingsUpdated', handleSettingsChange);
+    return () => window.removeEventListener('settingsUpdated', handleSettingsChange);
+  }, []);
 
   const handleLogin = (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -37,13 +46,13 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     } else {
       setError(true);
       setPassword('');
-      // Shake effect or feedback
     }
   };
 
   const SystemLogo = () => {
-    if (settings.logoUrl) {
-      return <img src={settings.logoUrl} alt="Logo" className="w-16 h-16 object-contain rounded-md mb-4" />;
+    const displayImg = settings.logoUrl || settings.appIconUrl;
+    if (displayImg) {
+      return <img src={displayImg} alt="Logo" className="w-16 h-16 object-contain rounded-xl mb-4 shadow-2xl" />;
     }
     return <BrandLogoDefault size={48} className="text-indigo-400 mb-4" />;
   };
@@ -98,7 +107,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           </form>
 
           <p className="mt-8 text-[8px] font-bold text-slate-600 uppercase tracking-widest">
-            Perfumaria Digital &copy; 2024
+            {settings.systemName} &copy; 2024
           </p>
         </div>
       </div>

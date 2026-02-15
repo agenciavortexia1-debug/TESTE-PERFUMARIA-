@@ -34,7 +34,7 @@ import Login from './pages/Login.tsx';
 import { DB } from './services/db.ts';
 import { AppSettings } from './types.ts';
 
-// Componente de Logotipo Customizado (Perfumaria Vintage) - Fallback
+// Ícone padrão caso nenhum seja enviado
 const BrandLogoDefault: React.FC<{ size?: number; className?: string }> = ({ size = 24, className = "" }) => (
   <svg 
     width={size} 
@@ -47,13 +47,8 @@ const BrandLogoDefault: React.FC<{ size?: number; className?: string }> = ({ siz
     <path d="M50 5 L93 30 L93 70 L50 95 L7 70 L7 30 Z" stroke="currentColor" strokeWidth="2.5" />
     <path d="M50 12 L86 32 L86 68 L50 88 L14 68 L14 32 Z" stroke="currentColor" strokeWidth="1" opacity="0.7" />
     <path d="M38 72 C38 82 62 82 62 72 L62 55 C62 50 38 50 38 55 Z" stroke="currentColor" strokeWidth="2" />
-    <path d="M40 55 L60 75 M40 65 L55 80 M45 52 L62 68 M60 55 L40 75 M60 65 L45 80 M55 52 L38 68" stroke="currentColor" strokeWidth="0.5" opacity="0.5" />
     <rect x="47" y="46" width="6" height="4" fill="currentColor" />
-    <path d="M53 48 Q68 48 68 58" stroke="currentColor" strokeWidth="1.5" fill="none" />
     <circle cx="68" cy="65" r="5" fill="currentColor" />
-    <line x1="42" y1="42" x2="38" y2="38" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    <line x1="36" y1="46" x2="31" y2="46" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    <circle cx="34" cy="40" r="1" fill="currentColor" />
   </svg>
 );
 
@@ -85,8 +80,6 @@ const AppContent: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [settings, setSettings] = useState<AppSettings>(DB.getSettings());
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [showInstallBtn, setShowInstallBtn] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('ef_theme');
     return saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -94,22 +87,30 @@ const AppContent: React.FC = () => {
   
   const location = useLocation();
 
-  // Escuta o evento de instalação do PWA
-  useEffect(() => {
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-      setShowInstallBtn(true);
-    });
-  }, []);
-
-  const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      setShowInstallBtn(false);
-      setDeferredPrompt(null);
+  const updateDynamicManifest = (currentSettings: AppSettings) => {
+    // Cria um manifesto dinâmico para que o ícone de instalação reflita o upload do usuário
+    const iconUrl = currentSettings.appIconUrl || 'https://cdn-icons-png.flaticon.com/512/3062/3062250.png';
+    const manifest = {
+      "name": currentSettings.systemName,
+      "short_name": currentSettings.systemName.split(' ')[0],
+      "description": "Sistema de Gestão Personalizado",
+      "start_url": "./index.html",
+      "display": "standalone",
+      "background_color": "#0f172a",
+      "theme_color": "#4f46e5",
+      "icons": [
+        { "src": iconUrl, "sizes": "192x192", "type": "image/png" },
+        { "src": iconUrl, "sizes": "512x512", "type": "image/png" }
+      ]
+    };
+    
+    const stringManifest = JSON.stringify(manifest);
+    const blob = new Blob([stringManifest], {type: 'application/json'});
+    const manifestURL = URL.createObjectURL(blob);
+    
+    const oldManifest = document.querySelector('link[rel="manifest"]');
+    if (oldManifest) {
+      oldManifest.setAttribute('href', manifestURL);
     }
   };
 
@@ -118,11 +119,20 @@ const AppContent: React.FC = () => {
       const updatedSettings = DB.getSettings();
       setSettings(updatedSettings);
       document.title = updatedSettings.systemName;
+      
+      // Atualiza Favicon
       if (updatedSettings.appIconUrl) {
         const links = document.querySelectorAll("link[rel*='icon']");
         links.forEach(link => { (link as HTMLLinkElement).href = updatedSettings.appIconUrl; });
+        
+        // Atualiza Apple Touch Icon
+        const appleIcon = document.querySelector("link[rel='apple-touch-icon']");
+        if (appleIcon) appleIcon.setAttribute('href', updatedSettings.appIconUrl);
       }
+      
+      updateDynamicManifest(updatedSettings);
     };
+
     window.addEventListener('settingsUpdated', handleSettingsChange);
     handleSettingsChange();
     return () => window.removeEventListener('settingsUpdated', handleSettingsChange);
@@ -169,8 +179,10 @@ const AppContent: React.FC = () => {
   ];
 
   const SystemLogo = () => {
-    if (settings.logoUrl) {
-      return <img src={settings.logoUrl} alt="Logo" className="w-8 h-8 object-contain rounded-sm" />;
+    // Prioriza Logo da Sidebar, se não houver, usa o Ícone do App, se não houver, usa o SVG padrão
+    const displayImg = settings.logoUrl || settings.appIconUrl;
+    if (displayImg) {
+      return <img src={displayImg} alt="Logo" className="w-8 h-8 object-contain rounded-md" />;
     }
     return <BrandLogoDefault size={24} className="text-[#E2D1B1] flex-shrink-0" />;
   };
@@ -213,7 +225,7 @@ const AppContent: React.FC = () => {
           </button>
         </div>
         
-        <nav className="px-4 space-y-2 mt-6 overflow-y-auto max-h-[calc(100vh-320px)] custom-scrollbar">
+        <nav className="px-4 space-y-2 mt-6">
           {navigation.map((item) => (
             <NavItem 
               key={item.to} 
@@ -228,25 +240,6 @@ const AppContent: React.FC = () => {
         </nav>
 
         <div className="absolute bottom-6 left-0 w-full px-4 space-y-2">
-          {/* Botão de Instalação PWA */}
-          {showInstallBtn && (
-            <button 
-              onClick={handleInstallClick}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-indigo-50 dark:bg-indigo-900/10 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/20 transition-all animate-in fade-in slide-in-from-bottom-2 duration-500 ${isCollapsed ? 'justify-center' : ''}`}
-            >
-              <Download size={20} className="animate-bounce" />
-              {!isCollapsed && <span className="font-black text-[10px] uppercase tracking-widest">Baixar App</span>}
-            </button>
-          )}
-
-          <button 
-            onClick={toggleTheme}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 ${isCollapsed ? 'justify-center' : ''}`}
-          >
-            {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
-            {!isCollapsed && <span className="font-black text-[10px] uppercase tracking-widest">{isDarkMode ? 'Modo Dia' : 'Modo Noite'}</span>}
-          </button>
-
           <button 
             onClick={handleLogout}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/10 ${isCollapsed ? 'justify-center' : ''}`}
@@ -254,7 +247,13 @@ const AppContent: React.FC = () => {
             <LogOut size={20} />
             {!isCollapsed && <span className="font-black text-[10px] uppercase tracking-widest">Sair</span>}
           </button>
-
+          <button 
+            onClick={toggleTheme}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 ${isCollapsed ? 'justify-center' : ''}`}
+          >
+            {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+            {!isCollapsed && <span className="font-black text-[10px] uppercase tracking-widest">{isDarkMode ? 'Modo Dia' : 'Modo Noite'}</span>}
+          </button>
           <button 
             onClick={toggleSidebar}
             className={`hidden md:flex w-full items-center gap-3 px-4 py-3 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 ${isCollapsed ? 'justify-center' : ''}`}
