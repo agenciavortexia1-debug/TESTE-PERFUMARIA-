@@ -2,12 +2,13 @@
 {
   "name": "Perfumaria Digital Pro",
   "short_name": "Perfumaria",
-  "description": "Sistema de gestão profissional offline-first.",
-  "start_url": "./index.html",
+  "description": "Sistema Profissional de Gestão de Perfumaria",
+  "id": "/perfumaria-digital-pro",
+  "start_url": "./",
   "display": "standalone",
-  "orientation": "portrait",
   "background_color": "#0f172a",
   "theme_color": "#4f46e5",
+  "orientation": "portrait",
   "categories": ["business", "productivity"],
   "icons": [
     {
@@ -20,7 +21,9 @@
       "src": "https://cdn-icons-png.flaticon.com/512/3062/3062250.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "maskable"
     }
-  ]
+  ],
+  "prefer_related_applications": false,
+  "display_override": ["standalone", "window-controls-overlay"]
 }

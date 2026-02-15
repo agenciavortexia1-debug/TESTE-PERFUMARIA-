@@ -22,7 +22,9 @@ import {
   Smartphone,
   Share,
   PlusSquare,
-  CheckCircle2
+  CheckCircle2,
+  Loader2,
+  ShieldCheck
 } from 'lucide-react';
 
 import Dashboard from './pages/Dashboard.tsx';
@@ -84,6 +86,8 @@ const AppContent: React.FC = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [settings, setSettings] = useState<AppSettings>(DB.getSettings());
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstalling, setIsInstalling] = useState(false);
+  const [installProgress, setInstallProgress] = useState(0);
   const [showInstallGuide, setShowInstallGuide] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('ef_theme');
@@ -94,50 +98,13 @@ const AppContent: React.FC = () => {
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
 
-  const updateDynamicManifest = (currentSettings: AppSettings) => {
-    const iconUrl = currentSettings.appIconUrl || 'https://cdn-icons-png.flaticon.com/512/3062/3062250.png';
-    const manifest = {
-      "name": currentSettings.systemName,
-      "short_name": currentSettings.systemName.split(' ')[0].substring(0, 12),
-      "description": "Sistema de Gestão Profissional",
-      "start_url": "./index.html",
-      "display": "standalone",
-      "orientation": "portrait",
-      "background_color": "#0f172a",
-      "theme_color": "#4f46e5",
-      "categories": ["business", "productivity"],
-      "icons": [
-        { 
-          "src": iconUrl, 
-          "sizes": "192x192", 
-          "type": "image/png",
-          "purpose": "any"
-        },
-        { 
-          "src": iconUrl, 
-          "sizes": "512x512", 
-          "type": "image/png",
-          "purpose": "maskable" 
-        }
-      ]
-    };
-    
-    const stringManifest = JSON.stringify(manifest);
-    const blob = new Blob([stringManifest], {type: 'application/manifest+json'});
-    const manifestURL = URL.createObjectURL(blob);
-    
-    const oldManifest = document.querySelector('link[rel="manifest"]');
-    if (oldManifest) {
-      oldManifest.setAttribute('href', manifestURL);
-    }
-  };
-
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: any) => {
-      // Impede que o navegador mostre o banner padrão imediatamente
+      // Impede que o navegador mostre o banner padrão
       e.preventDefault();
       // Salva o evento para ser disparado pelo nosso botão
       setDeferredPrompt(e);
+      console.log('Evento beforeinstallprompt disparado e salvo.');
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -153,8 +120,6 @@ const AppContent: React.FC = () => {
         const appleIcon = document.querySelector("link[rel='apple-touch-icon']");
         if (appleIcon) appleIcon.setAttribute('href', updatedSettings.appIconUrl);
       }
-      
-      updateDynamicManifest(updatedSettings);
     };
 
     window.addEventListener('settingsUpdated', handleSettingsChange);
@@ -183,15 +148,34 @@ const AppContent: React.FC = () => {
     }
     
     if (deferredPrompt) {
-      // Isso abre a janela oficial de "Instalar Aplicativo" do Android (WebAPK)
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        console.log('Usuário aceitou a instalação');
-        setDeferredPrompt(null);
-      }
+      setIsInstalling(true);
+      setInstallProgress(0);
+
+      const interval = setInterval(() => {
+        setInstallProgress(prev => {
+          if (prev >= 98) {
+            clearInterval(interval);
+            return 98;
+          }
+          return prev + Math.random() * 20;
+        });
+      }, 200);
+
+      setTimeout(async () => {
+        clearInterval(interval);
+        setInstallProgress(100);
+        
+        // Agora mostramos o prompt oficial do sistema
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        
+        setIsInstalling(false);
+        if (outcome === 'accepted') {
+          console.log('Usuário instalou o App');
+          setDeferredPrompt(null);
+        }
+      }, 1500);
     } else {
-      // Se não houver o prompt salvo, mostramos o guia manual
       setShowInstallGuide(true);
     }
   };
@@ -334,16 +318,51 @@ const AppContent: React.FC = () => {
         </div>
       </main>
 
-      {showInstallGuide && (
+      {/* TELA DE PROGRESSO DE INSTALAÇÃO (UX APP REAL) */}
+      {isInstalling && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-[#020617] backdrop-blur-xl animate-in fade-in duration-300">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-xs p-8 text-center shadow-[0_32px_64px_rgba(0,0,0,0.5)] border border-slate-200 dark:border-slate-800">
+            <div className="relative w-32 h-32 mx-auto mb-8">
+              <svg className="w-full h-full transform -rotate-90">
+                <circle 
+                  cx="64" cy="64" r="58" 
+                  stroke="currentColor" strokeWidth="6" fill="transparent" 
+                  className="text-slate-100 dark:text-slate-800"
+                />
+                <circle 
+                  cx="64" cy="64" r="58" 
+                  stroke="currentColor" strokeWidth="6" fill="transparent" 
+                  strokeDasharray={364.4}
+                  strokeDashoffset={364.4 - (364.4 * installProgress) / 100}
+                  className="text-indigo-600 transition-all duration-300 ease-out"
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <Smartphone size={40} className="text-indigo-600 animate-pulse mb-1" />
+                <span className="text-xs font-black text-indigo-600">{Math.round(installProgress)}%</span>
+              </div>
+            </div>
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <ShieldCheck size={16} className="text-emerald-500" />
+              <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase italic tracking-tighter">Instalando App Real</h3>
+            </div>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
+              O sistema será adicionado à sua lista de aplicativos sem a logo do navegador.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {showInstallGuide && !isInstalling && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md animate-in fade-in duration-300">
           <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
             <div className="p-6 text-center">
               <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-indigo-600/20">
                 <Smartphone size={32} className="text-white" />
               </div>
-              <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase italic tracking-tighter mb-2">Instalar Aplicativo</h2>
+              <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase italic tracking-tighter mb-2">Quase lá!</h2>
               <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-relaxed mb-6">
-                Para o Android criar um app real (limpo) você deve aceitar o convite de instalação do navegador.
+                Seu navegador ainda está preparando o pacote de instalação. Tente atualizar a página ou use o menu do navegador.
               </p>
 
               <div className="space-y-4 text-left mb-8">
@@ -359,23 +378,20 @@ const AppContent: React.FC = () => {
                     </div>
                   </>
                 ) : (
-                  <div className="flex items-center gap-3 p-4 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30 rounded-lg">
-                    <CheckCircle2 size={20} className="text-emerald-500" />
-                    <p className="text-[9px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest leading-normal">
-                      Clique em "Instalar" na janela oficial que abrirá agora. Isso gerará o app limpo na sua lista de aplicativos.
+                  <div className="flex items-center gap-3 p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30 rounded-lg">
+                    <Loader2 size={20} className="text-amber-500 animate-spin" />
+                    <p className="text-[9px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-widest leading-normal">
+                      Vá no menu do Chrome (três pontinhos) e procure por "Instalar Aplicativo".
                     </p>
                   </div>
                 )}
               </div>
 
               <button 
-                onClick={() => {
-                  setShowInstallGuide(false);
-                  if (deferredPrompt) deferredPrompt.prompt();
-                }}
+                onClick={() => setShowInstallGuide(false)}
                 className="w-full py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl transition-all active:scale-95 shadow-lg"
               >
-                Instalar Agora
+                Entendi
               </button>
             </div>
           </div>
