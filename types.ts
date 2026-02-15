@@ -17,6 +17,7 @@ export interface AppSettings {
   systemName: string;
   logoUrl: string; // Base64 ou URL
   appIconUrl: string; // Base64 ou URL para favicon/PWA
+  password?: string;
 }
 
 export interface Customer {

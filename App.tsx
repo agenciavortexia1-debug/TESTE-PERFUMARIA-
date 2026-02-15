@@ -17,7 +17,8 @@ import {
   BarChart3,
   History,
   Download,
-  Settings as SettingsIcon
+  Settings as SettingsIcon,
+  LogOut
 } from 'lucide-react';
 
 import Dashboard from './pages/Dashboard.tsx';
@@ -29,6 +30,7 @@ import FollowUp from './pages/FollowUp.tsx';
 import KPI from './pages/KPI.tsx';
 import SalesHistory from './pages/SalesHistory.tsx';
 import SettingsPage from './pages/Settings.tsx';
+import Login from './pages/Login.tsx';
 import { DB } from './services/db.ts';
 import { AppSettings } from './types.ts';
 
@@ -78,12 +80,13 @@ const NavItem: React.FC<{
   </Link>
 );
 
-const App: React.FC = () => {
+const AppContent: React.FC = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(() => sessionStorage.getItem('ef_auth') === 'true');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [settings, setSettings] = useState<AppSettings>(DB.getSettings());
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallBtn, setShowInstallBtn] = useState(false);
-  const [settings, setSettings] = useState<AppSettings>(DB.getSettings());
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('ef_theme');
     return saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -91,26 +94,37 @@ const App: React.FC = () => {
   
   const location = useLocation();
 
-  // Escuta mudanças nas configurações (Branding)
+  // Escuta o evento de instalação do PWA
+  useEffect(() => {
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstallBtn(true);
+    });
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setShowInstallBtn(false);
+      setDeferredPrompt(null);
+    }
+  };
+
   useEffect(() => {
     const handleSettingsChange = () => {
       const updatedSettings = DB.getSettings();
       setSettings(updatedSettings);
       document.title = updatedSettings.systemName;
-      
-      // Atualiza ícone dinamicamente no navegador
       if (updatedSettings.appIconUrl) {
         const links = document.querySelectorAll("link[rel*='icon']");
-        links.forEach(link => {
-          (link as HTMLLinkElement).href = updatedSettings.appIconUrl;
-        });
+        links.forEach(link => { (link as HTMLLinkElement).href = updatedSettings.appIconUrl; });
       }
     };
-    
-    // Polling simples ou evento customizado
     window.addEventListener('settingsUpdated', handleSettingsChange);
     handleSettingsChange();
-    
     return () => window.removeEventListener('settingsUpdated', handleSettingsChange);
   }, []);
 
@@ -124,21 +138,19 @@ const App: React.FC = () => {
     }
   }, [isDarkMode]);
 
-  useEffect(() => {
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-      setShowInstallBtn(true);
-    });
-  }, []);
-
-  const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') setShowInstallBtn(false);
-    setDeferredPrompt(null);
+  const handleLogin = () => {
+    setIsAuthenticated(true);
+    sessionStorage.setItem('ef_auth', 'true');
   };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    sessionStorage.removeItem('ef_auth');
+  };
+
+  if (!isAuthenticated) {
+    return <Login onLogin={handleLogin} />;
+  }
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const toggleSidebar = () => setIsCollapsed(!isCollapsed);
@@ -201,7 +213,7 @@ const App: React.FC = () => {
           </button>
         </div>
         
-        <nav className="px-4 space-y-2 mt-6">
+        <nav className="px-4 space-y-2 mt-6 overflow-y-auto max-h-[calc(100vh-320px)] custom-scrollbar">
           {navigation.map((item) => (
             <NavItem 
               key={item.to} 
@@ -216,6 +228,17 @@ const App: React.FC = () => {
         </nav>
 
         <div className="absolute bottom-6 left-0 w-full px-4 space-y-2">
+          {/* Botão de Instalação PWA */}
+          {showInstallBtn && (
+            <button 
+              onClick={handleInstallClick}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-indigo-50 dark:bg-indigo-900/10 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/20 transition-all animate-in fade-in slide-in-from-bottom-2 duration-500 ${isCollapsed ? 'justify-center' : ''}`}
+            >
+              <Download size={20} className="animate-bounce" />
+              {!isCollapsed && <span className="font-black text-[10px] uppercase tracking-widest">Baixar App</span>}
+            </button>
+          )}
+
           <button 
             onClick={toggleTheme}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 ${isCollapsed ? 'justify-center' : ''}`}
@@ -223,6 +246,15 @@ const App: React.FC = () => {
             {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
             {!isCollapsed && <span className="font-black text-[10px] uppercase tracking-widest">{isDarkMode ? 'Modo Dia' : 'Modo Noite'}</span>}
           </button>
+
+          <button 
+            onClick={handleLogout}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/10 ${isCollapsed ? 'justify-center' : ''}`}
+          >
+            <LogOut size={20} />
+            {!isCollapsed && <span className="font-black text-[10px] uppercase tracking-widest">Sair</span>}
+          </button>
+
           <button 
             onClick={toggleSidebar}
             className={`hidden md:flex w-full items-center gap-3 px-4 py-3 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 ${isCollapsed ? 'justify-center' : ''}`}
@@ -259,8 +291,10 @@ const App: React.FC = () => {
   );
 };
 
-export default () => (
+const App: React.FC = () => (
   <Router>
-    <App />
+    <AppContent />
   </Router>
 );
+
+export default App;

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Save, Upload, Trash2, Layout, Smartphone, Palette, CheckCircle2, Info } from 'lucide-react';
+import { Save, Upload, Trash2, Layout, Smartphone, Palette, CheckCircle2, Info, Lock } from 'lucide-react';
 import { DB } from '../services/db.ts';
 import { AppSettings } from '../types.ts';
 
@@ -39,7 +39,7 @@ const Settings: React.FC = () => {
     <div className="max-w-4xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
         <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter uppercase italic">Personalização</h1>
-        <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-widest">Ajuste a identidade visual do seu sistema.</p>
+        <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-widest">Ajuste a identidade visual e segurança do seu sistema.</p>
       </div>
 
       {/* Alerta de Especificações Técnicas */}
@@ -69,20 +69,26 @@ const Settings: React.FC = () => {
               className="w-full px-4 py-3 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md focus:ring-1 focus:ring-indigo-500 text-xs font-black dark:text-white outline-none uppercase"
               placeholder="EX: PERFUMARIA LUXO"
             />
-            <p className="text-[8px] text-slate-400 mt-2 font-bold uppercase">Este nome aparecerá no título da aba e na barra lateral.</p>
           </div>
         </div>
 
-        {/* Visualização de Branding */}
-        <div className="bg-slate-950 p-6 rounded-lg border border-slate-800 shadow-xl flex flex-col items-center justify-center text-center">
-          <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-4">Preview em Tempo Real</p>
-          <div className="flex items-center gap-3 bg-slate-900 p-4 rounded-md border border-slate-800 w-full">
-            {settings.logoUrl ? (
-              <img src={settings.logoUrl} className="w-8 h-8 object-contain rounded" alt="Preview Logo" />
-            ) : (
-              <div className="w-8 h-8 bg-indigo-600 rounded flex items-center justify-center text-white font-black text-xs">P</div>
-            )}
-            <span className="text-white font-black uppercase italic tracking-tighter">{settings.systemName}</span>
+        {/* Senha de Acesso */}
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Lock size={18} className="text-rose-500" />
+            <h3 className="text-[11px] font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest">Segurança de Acesso</h3>
+          </div>
+          <div>
+            <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Senha do Sistema</label>
+            <input 
+              name="password"
+              type="password"
+              value={settings.password}
+              onChange={handleInputChange}
+              className="w-full px-4 py-3 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md focus:ring-1 focus:ring-indigo-500 text-xs font-black dark:text-white outline-none"
+              placeholder="Senha de acesso..."
+            />
+            <p className="text-[8px] text-slate-400 mt-2 font-bold uppercase italic tracking-widest">Senha padrão: 1234</p>
           </div>
         </div>
 
@@ -114,7 +120,6 @@ const Settings: React.FC = () => {
               </label>
             )}
           </div>
-          <p className="text-[8px] text-slate-400 text-center font-bold uppercase">Aparece ao lado do nome na barra lateral.</p>
         </div>
 
         {/* Ícone do App */}
@@ -145,7 +150,6 @@ const Settings: React.FC = () => {
               </label>
             )}
           </div>
-          <p className="text-[8px] text-slate-400 text-center font-bold uppercase">Aparece na tela inicial do celular e no navegador.</p>
         </div>
       </div>
 
@@ -164,7 +168,7 @@ const Settings: React.FC = () => {
           <CheckCircle2 size={24} />
           <div className="flex flex-col">
             <span className="text-xs font-black uppercase tracking-widest">Sucesso</span>
-            <span className="text-[10px] font-bold opacity-80 uppercase">A identidade visual foi atualizada em todo o sistema.</span>
+            <span className="text-[10px] font-bold opacity-80 uppercase">As configurações foram atualizadas.</span>
           </div>
         </div>
       )}

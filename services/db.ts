@@ -41,7 +41,8 @@ export const DB = {
   getSettings: (): AppSettings => get<AppSettings>(STORAGE_KEYS.SETTINGS, {
     systemName: 'Perfumaria Digital',
     logoUrl: '',
-    appIconUrl: ''
+    appIconUrl: '',
+    password: '1234'
   }),
   saveSettings: (data: AppSettings) => set(STORAGE_KEYS.SETTINGS, data),
 
