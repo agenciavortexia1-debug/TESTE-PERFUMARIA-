@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { HashRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -98,38 +98,35 @@ const AppContent: React.FC = () => {
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
 
+  const handleSettingsChange = useCallback(() => {
+    const updatedSettings = DB.getSettings();
+    setSettings(updatedSettings);
+    document.title = updatedSettings.systemName;
+    
+    if (updatedSettings.appIconUrl) {
+      const links = document.querySelectorAll("link[rel*='icon']");
+      links.forEach(link => { (link as HTMLLinkElement).href = updatedSettings.appIconUrl; });
+      const appleIcon = document.querySelector("link[rel='apple-touch-icon']");
+      if (appleIcon) appleIcon.setAttribute('href', updatedSettings.appIconUrl);
+    }
+  }, []);
+
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: any) => {
-      // Impede que o navegador mostre o banner padrão
       e.preventDefault();
-      // Salva o evento para ser disparado pelo nosso botão
       setDeferredPrompt(e);
-      console.log('Evento beforeinstallprompt disparado e salvo.');
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    const handleSettingsChange = () => {
-      const updatedSettings = DB.getSettings();
-      setSettings(updatedSettings);
-      document.title = updatedSettings.systemName;
-      
-      if (updatedSettings.appIconUrl) {
-        const links = document.querySelectorAll("link[rel*='icon']");
-        links.forEach(link => { (link as HTMLLinkElement).href = updatedSettings.appIconUrl; });
-        const appleIcon = document.querySelector("link[rel='apple-touch-icon']");
-        if (appleIcon) appleIcon.setAttribute('href', updatedSettings.appIconUrl);
-      }
-    };
-
     window.addEventListener('settingsUpdated', handleSettingsChange);
+    
     handleSettingsChange();
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('settingsUpdated', handleSettingsChange);
     };
-  }, []);
+  }, [handleSettingsChange]);
 
   useEffect(() => {
     if (isDarkMode) {
@@ -164,16 +161,10 @@ const AppContent: React.FC = () => {
       setTimeout(async () => {
         clearInterval(interval);
         setInstallProgress(100);
-        
-        // Agora mostramos o prompt oficial do sistema
         deferredPrompt.prompt();
         const { outcome } = await deferredPrompt.userChoice;
-        
         setIsInstalling(false);
-        if (outcome === 'accepted') {
-          console.log('Usuário instalou o App');
-          setDeferredPrompt(null);
-        }
+        if (outcome === 'accepted') setDeferredPrompt(null);
       }, 1500);
     } else {
       setShowInstallGuide(true);
@@ -210,20 +201,14 @@ const AppContent: React.FC = () => {
     { to: '/personalizar', icon: SettingsIcon, label: 'Personalizar' },
   ];
 
-  const SystemLogo = () => {
-    const displayImg = settings.logoUrl || settings.appIconUrl;
-    if (displayImg) {
-      return <img src={displayImg} alt="Logo" className="w-8 h-8 object-contain rounded-md" />;
-    }
-    return <BrandLogoDefault size={24} className="text-[#E2D1B1] flex-shrink-0" />;
-  };
+  const displayLogo = settings.logoUrl || settings.appIconUrl;
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200">
       
       <header className="md:hidden bg-[#0f172a] border-b border-slate-800 px-5 py-4 flex items-center justify-between sticky top-0 z-40">
         <div className="flex items-center gap-2">
-          <SystemLogo />
+          {displayLogo ? <img src={displayLogo} className="w-8 h-8 object-contain rounded-md" /> : <BrandLogoDefault className="text-[#E2D1B1]" />}
           <span className="font-black text-lg tracking-tighter text-white uppercase italic truncate max-w-[180px]">
             {settings.systemName}
           </span>
@@ -246,7 +231,7 @@ const AppContent: React.FC = () => {
       `}>
         <div className={`p-5 border-b border-slate-800 flex items-center bg-[#0f172a] text-white transition-all ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
            <div className="flex items-center gap-2 overflow-hidden">
-            <SystemLogo />
+            {displayLogo ? <img src={displayLogo} className="w-8 h-8 object-contain rounded-md flex-shrink-0" /> : <BrandLogoDefault className="text-[#E2D1B1] flex-shrink-0" />}
             {!isCollapsed && <span className="font-black text-lg uppercase italic tracking-tighter truncate">{settings.systemName}</span>}
           </div>
           <button onClick={() => setIsMenuOpen(false)} className="md:hidden p-2 text-slate-400">
@@ -279,24 +264,15 @@ const AppContent: React.FC = () => {
             </button>
           )}
 
-          <button 
-            onClick={handleLogout}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/10 ${isCollapsed ? 'justify-center' : ''}`}
-          >
+          <button onClick={handleLogout} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/10 ${isCollapsed ? 'justify-center' : ''}`}>
             <LogOut size={20} />
             {!isCollapsed && <span className="font-black text-[10px] uppercase tracking-widest">Sair</span>}
           </button>
-          <button 
-            onClick={toggleTheme}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 ${isCollapsed ? 'justify-center' : ''}`}
-          >
+          <button onClick={toggleTheme} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 ${isCollapsed ? 'justify-center' : ''}`}>
             {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
-            {!isCollapsed && <span className="font-black text-[10px] uppercase tracking-widest">{isDarkMode ? 'Modo Dia' : 'Modo Noite'}</span>}
+            {!isCollapsed && <span className="font-black text-[10px] uppercase tracking-widest">{isDarkMode ? 'Dia' : 'Noite'}</span>}
           </button>
-          <button 
-            onClick={toggleSidebar}
-            className={`hidden md:flex w-full items-center gap-3 px-4 py-3 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 ${isCollapsed ? 'justify-center' : ''}`}
-          >
+          <button onClick={toggleSidebar} className={`hidden md:flex w-full items-center gap-3 px-4 py-3 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 ${isCollapsed ? 'justify-center' : ''}`}>
             {isCollapsed ? <ChevronRight size={20} /> : <><ChevronLeft size={20} /><span className="font-black text-[10px] uppercase tracking-widest">Recolher</span></>}
           </button>
         </div>
@@ -318,24 +294,13 @@ const AppContent: React.FC = () => {
         </div>
       </main>
 
-      {/* TELA DE PROGRESSO DE INSTALAÇÃO (UX APP REAL) */}
       {isInstalling && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-[#020617] backdrop-blur-xl animate-in fade-in duration-300">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-xs p-8 text-center shadow-[0_32px_64px_rgba(0,0,0,0.5)] border border-slate-200 dark:border-slate-800">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-xs p-8 text-center shadow-2xl border border-slate-200 dark:border-slate-800">
             <div className="relative w-32 h-32 mx-auto mb-8">
               <svg className="w-full h-full transform -rotate-90">
-                <circle 
-                  cx="64" cy="64" r="58" 
-                  stroke="currentColor" strokeWidth="6" fill="transparent" 
-                  className="text-slate-100 dark:text-slate-800"
-                />
-                <circle 
-                  cx="64" cy="64" r="58" 
-                  stroke="currentColor" strokeWidth="6" fill="transparent" 
-                  strokeDasharray={364.4}
-                  strokeDashoffset={364.4 - (364.4 * installProgress) / 100}
-                  className="text-indigo-600 transition-all duration-300 ease-out"
-                />
+                <circle cx="64" cy="64" r="58" stroke="currentColor" strokeWidth="6" fill="transparent" className="text-slate-100 dark:text-slate-800"/>
+                <circle cx="64" cy="64" r="58" stroke="currentColor" strokeWidth="6" fill="transparent" strokeDasharray={364.4} strokeDashoffset={364.4 - (364.4 * installProgress) / 100} className="text-indigo-600 transition-all duration-300 ease-out"/>
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <Smartphone size={40} className="text-indigo-600 animate-pulse mb-1" />
@@ -346,64 +311,21 @@ const AppContent: React.FC = () => {
               <ShieldCheck size={16} className="text-emerald-500" />
               <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase italic tracking-tighter">Instalando App Real</h3>
             </div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
-              O sistema será adicionado à sua lista de aplicativos sem a logo do navegador.
-            </p>
           </div>
         </div>
       )}
 
       {showInstallGuide && !isInstalling && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-            <div className="p-6 text-center">
-              <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-indigo-600/20">
-                <Smartphone size={32} className="text-white" />
-              </div>
-              <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase italic tracking-tighter mb-2">Quase lá!</h2>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-relaxed mb-6">
-                Seu navegador ainda está preparando o pacote de instalação. Tente atualizar a página ou use o menu do navegador.
-              </p>
-
-              <div className="space-y-4 text-left mb-8">
-                {isIOS ? (
-                  <>
-                    <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                      <div className="w-8 h-8 rounded bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 font-black text-xs">1</div>
-                      <p className="text-[9px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest">Toque em <Share size={14} className="inline mx-1" /> (Compartilhar)</p>
-                    </div>
-                    <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                      <div className="w-8 h-8 rounded bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 font-black text-xs">2</div>
-                      <p className="text-[9px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest">Toque em <PlusSquare size={14} className="inline mx-1" /> "Adicionar à Tela de Início"</p>
-                    </div>
-                  </>
-                ) : (
-                  <div className="flex items-center gap-3 p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30 rounded-lg">
-                    <Loader2 size={20} className="text-amber-500 animate-spin" />
-                    <p className="text-[9px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-widest leading-normal">
-                      Vá no menu do Chrome (três pontinhos) e procure por "Instalar Aplicativo".
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              <button 
-                onClick={() => setShowInstallGuide(false)}
-                className="w-full py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl transition-all active:scale-95 shadow-lg"
-              >
-                Entendi
-              </button>
-            </div>
+          <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm shadow-2xl border border-slate-200 dark:border-slate-800 p-6 text-center">
+            <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase italic tracking-tighter mb-4">Ação Necessária</h2>
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-relaxed mb-6">Use o menu do navegador para "Instalar Aplicativo" ou adicione à tela inicial.</p>
+            <button onClick={() => setShowInstallGuide(false)} className="w-full py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl transition-all shadow-lg">Entendi</button>
           </div>
         </div>
       )}
 
-      {isMenuOpen && (
-        <div 
-          className="fixed inset-0 bg-slate-950/80 z-40 md:hidden backdrop-blur-sm animate-in fade-in duration-300" 
-          onClick={() => setIsMenuOpen(false)}
-        />
-      )}
+      {isMenuOpen && <div className="fixed inset-0 bg-slate-950/80 z-40 md:hidden backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setIsMenuOpen(false)} />}
     </div>
   );
 };

@@ -1,20 +1,16 @@
 
-const CACHE_NAME = 'perfumaria-v4';
+const CACHE_NAME = 'perfumaria-v5';
 const OFFLINE_URL = 'index.html';
 
 const ASSETS = [
   '/',
   './index.html',
-  './manifest.json',
-  'https://cdn.tailwindcss.com',
-  'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap'
+  './manifest.json'
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS);
-    })
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
   );
   self.skipWaiting();
 });
@@ -30,12 +26,11 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
+// Estratégia Network First para garantir atualizações de personalização
 self.addEventListener('fetch', (event) => {
-  if (event.request.mode === 'navigate') {
+  if (event.request.mode === 'navigate' || event.request.destination === 'script') {
     event.respondWith(
-      fetch(event.request).catch(() => {
-        return caches.match(OFFLINE_URL);
-      })
+      fetch(event.request).catch(() => caches.match(OFFLINE_URL))
     );
     return;
   }

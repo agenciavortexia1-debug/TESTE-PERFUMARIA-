@@ -11,12 +11,22 @@ const STORAGE_KEYS = {
 };
 
 const get = <T,>(key: string, defaultValue: T): T => {
-  const data = localStorage.getItem(key);
-  return data ? JSON.parse(data) : defaultValue;
+  try {
+    const data = localStorage.getItem(key);
+    return data ? JSON.parse(data) : defaultValue;
+  } catch (e) {
+    console.error("Erro ao ler do DB", e);
+    return defaultValue;
+  }
 };
 
 const set = <T,>(key: string, value: T): void => {
-  localStorage.setItem(key, JSON.stringify(value));
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (e) {
+    console.error("Erro ao salvar no DB - Possível limite atingido", e);
+    alert("Erro: O armazenamento está cheio. Tente usar imagens menores na personalização.");
+  }
 };
 
 const daysAgo = (days: number) => {
