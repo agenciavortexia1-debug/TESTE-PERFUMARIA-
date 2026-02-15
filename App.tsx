@@ -117,7 +117,7 @@ const AppContent: React.FC = () => {
           "src": iconUrl, 
           "sizes": "512x512", 
           "type": "image/png",
-          "purpose": "any maskable" 
+          "purpose": "maskable" 
         }
       ]
     };
@@ -134,7 +134,9 @@ const AppContent: React.FC = () => {
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: any) => {
+      // Impede que o navegador mostre o banner padrão imediatamente
       e.preventDefault();
+      // Salva o evento para ser disparado pelo nosso botão
       setDeferredPrompt(e);
     };
 
@@ -181,12 +183,15 @@ const AppContent: React.FC = () => {
     }
     
     if (deferredPrompt) {
+      // Isso abre a janela oficial de "Instalar Aplicativo" do Android (WebAPK)
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
       if (outcome === 'accepted') {
+        console.log('Usuário aceitou a instalação');
         setDeferredPrompt(null);
       }
     } else {
+      // Se não houver o prompt salvo, mostramos o guia manual
       setShowInstallGuide(true);
     }
   };
@@ -286,7 +291,7 @@ const AppContent: React.FC = () => {
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/10 hover:bg-indigo-100 dark:hover:bg-indigo-900/20 transition-all mb-1 ${isCollapsed ? 'justify-center' : ''}`}
             >
               <Download size={20} />
-              {!isCollapsed && <span className="font-black text-[10px] uppercase tracking-widest text-left leading-tight">Instalar App<br/><span className="text-[7px] opacity-70">Experiência Nativa</span></span>}
+              {!isCollapsed && <span className="font-black text-[10px] uppercase tracking-widest text-left leading-tight">Instalar App<br/><span className="text-[7px] opacity-70">App Real (Sem Chrome)</span></span>}
             </button>
           )}
 
@@ -338,7 +343,7 @@ const AppContent: React.FC = () => {
               </div>
               <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase italic tracking-tighter mb-2">Instalar Aplicativo</h2>
               <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-relaxed mb-6">
-                Para remover o ícone do navegador e ter um app real, clique no botão de instalação abaixo.
+                Para o Android criar um app real (limpo) você deve aceitar o convite de instalação do navegador.
               </p>
 
               <div className="space-y-4 text-left mb-8">
@@ -357,17 +362,20 @@ const AppContent: React.FC = () => {
                   <div className="flex items-center gap-3 p-4 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30 rounded-lg">
                     <CheckCircle2 size={20} className="text-emerald-500" />
                     <p className="text-[9px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest leading-normal">
-                      Aguarde o prompt oficial do Chrome e clique em "Instalar". Isso criará o app sem a marca do navegador.
+                      Clique em "Instalar" na janela oficial que abrirá agora. Isso gerará o app limpo na sua lista de aplicativos.
                     </p>
                   </div>
                 )}
               </div>
 
               <button 
-                onClick={() => setShowInstallGuide(false)}
+                onClick={() => {
+                  setShowInstallGuide(false);
+                  if (deferredPrompt) deferredPrompt.prompt();
+                }}
                 className="w-full py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl transition-all active:scale-95 shadow-lg"
               >
-                Entendi!
+                Instalar Agora
               </button>
             </div>
           </div>
