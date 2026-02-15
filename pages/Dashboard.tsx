@@ -212,34 +212,51 @@ const Dashboard: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Gráfico Frequência de Vendas com Altura Aumentada e Labels Internos Brancos */}
+        {/* Gráfico Frequência de Vendas - AJUSTE MOBILE */}
         <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-6 rounded-md border border-slate-200 dark:border-slate-800 shadow-sm">
           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-8 flex items-center gap-2">
             <BarChart3 size={16} className="text-indigo-500" />
             Frequência de Vendas (Qtd.)
           </h3>
-          <div className="h-[500px] w-full"> {/* Aumento da altura para ocupar o espaço marcado */}
+          <div className="h-[300px] md:h-[500px] w-full"> {/* Altura responsiva: menor no mobile, maior no desktop */}
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={weeklySalesData}>
+              <BarChart data={weeklySalesData} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" opacity={0.3} />
                 <XAxis 
                   dataKey="date" 
                   tickFormatter={(val) => val.split('-')[2] + '/' + val.split('-')[1]} 
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 'bold' }}
+                  interval={window.innerWidth < 768 ? 1 : 0} // Pula labels no mobile para não sobrepor
+                  tick={{ fill: '#94a3b8', fontSize: 9, fontWeight: '800' }}
                 />
                 <YAxis hide />
                 <Tooltip 
                   cursor={{ fill: 'rgba(79, 70, 229, 0.05)' }}
                   contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '4px', fontSize: '10px' }}
                 />
-                <Bar dataKey="value" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={40}>
+                <Bar dataKey="value" fill="#6366f1" radius={[4, 4, 0, 0]}>
                   <LabelList 
                     dataKey="value" 
                     position="insideTop" 
                     offset={10}
-                    style={{ fill: '#ffffff', fontSize: '12px', fontWeight: '900' }}
+                    // Exibe o número apenas se for maior que zero para limpar a base do gráfico
+                    content={(props: any) => {
+                      const { x, y, width, value } = props;
+                      if (value === 0) return null;
+                      return (
+                        <text 
+                          x={x + width / 2} 
+                          y={y + 15} 
+                          fill="#ffffff" 
+                          textAnchor="middle" 
+                          fontSize="11" 
+                          fontWeight="900"
+                        >
+                          {value}
+                        </text>
+                      );
+                    }}
                   />
                 </Bar>
               </BarChart>
