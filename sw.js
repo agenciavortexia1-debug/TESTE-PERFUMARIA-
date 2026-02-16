@@ -1,12 +1,13 @@
 
-const CACHE_NAME = 'perfumaria-pro-v6';
+const CACHE_NAME = 'perfumaria-pro-v7';
 const OFFLINE_URL = 'index.html';
 
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
-  'https://cdn.tailwindcss.com'
+  'https://cdn.tailwindcss.com',
+  'https://lh3.googleusercontent.com/d/1dIF41dNcltZLgW5ORJ0A8MMt-6haJNpl'
 ];
 
 self.addEventListener('install', (event) => {
@@ -27,11 +28,9 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Estratégia: Network First para Navegação e Scripts, Cache First para o resto
 self.addEventListener('fetch', (event) => {
   const isNavigation = event.request.mode === 'navigate';
-  const isInternal = event.request.url.includes(self.location.origin);
-
+  
   if (isNavigation) {
     event.respondWith(
       fetch(event.request).catch(() => caches.match(OFFLINE_URL))

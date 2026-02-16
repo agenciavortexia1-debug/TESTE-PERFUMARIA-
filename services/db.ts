@@ -10,6 +10,8 @@ const STORAGE_KEYS = {
   INITIALIZED: 'ef_initialized'
 };
 
+const DEFAULT_LOGO = "https://lh3.googleusercontent.com/d/1dIF41dNcltZLgW5ORJ0A8MMt-6haJNpl";
+
 const get = <T,>(key: string, defaultValue: T): T => {
   try {
     const data = localStorage.getItem(key);
@@ -50,8 +52,8 @@ export const DB = {
 
   getSettings: (): AppSettings => get<AppSettings>(STORAGE_KEYS.SETTINGS, {
     systemName: 'Perfumaria Digital',
-    logoUrl: '',
-    appIconUrl: '',
+    logoUrl: DEFAULT_LOGO,
+    appIconUrl: DEFAULT_LOGO,
     password: '1234'
   }),
   saveSettings: (data: AppSettings) => set(STORAGE_KEYS.SETTINGS, data),
