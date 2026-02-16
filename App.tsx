@@ -80,12 +80,16 @@ const NavItem: React.FC<{
   </Link>
 );
 
-const AppContent: React.FC = () => {
+interface AppContentProps {
+  deferredPrompt: any;
+  setDeferredPrompt: (p: any) => void;
+}
+
+const AppContent: React.FC<AppContentProps> = ({ deferredPrompt, setDeferredPrompt }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(() => sessionStorage.getItem('ef_auth') === 'true');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [settings, setSettings] = useState<AppSettings>(DB.getSettings());
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstalling, setIsInstalling] = useState(false);
   const [installProgress, setInstallProgress] = useState(0);
   const [showInstallGuide, setShowInstallGuide] = useState(false);
@@ -112,20 +116,9 @@ const AppContent: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const handleBeforeInstallPrompt = (e: any) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('settingsUpdated', handleSettingsChange);
-    
     handleSettingsChange();
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      window.removeEventListener('settingsUpdated', handleSettingsChange);
-    };
+    return () => window.removeEventListener('settingsUpdated', handleSettingsChange);
   }, [handleSettingsChange]);
 
   useEffect(() => {
@@ -161,11 +154,21 @@ const AppContent: React.FC = () => {
       setTimeout(async () => {
         clearInterval(interval);
         setInstallProgress(100);
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        setIsInstalling(false);
-        if (outcome === 'accepted') setDeferredPrompt(null);
-      }, 1500);
+        
+        try {
+          deferredPrompt.prompt();
+          const { outcome } = await deferredPrompt.userChoice;
+          console.log('User choice outcome:', outcome);
+          if (outcome === 'accepted') {
+            setDeferredPrompt(null);
+          }
+        } catch (err) {
+          console.error('Erro ao disparar prompt:', err);
+          setShowInstallGuide(true);
+        } finally {
+          setIsInstalling(false);
+        }
+      }, 1200);
     } else {
       setShowInstallGuide(true);
     }
@@ -260,7 +263,7 @@ const AppContent: React.FC = () => {
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/10 hover:bg-indigo-100 dark:hover:bg-indigo-900/20 transition-all mb-1 ${isCollapsed ? 'justify-center' : ''}`}
             >
               <Download size={20} />
-              {!isCollapsed && <span className="font-black text-[10px] uppercase tracking-widest text-left leading-tight">Instalar App<br/><span className="text-[7px] opacity-70">App Real (Sem Chrome)</span></span>}
+              {!isCollapsed && <span className="font-black text-[10px] uppercase tracking-widest text-left leading-tight">Instalar App<br/><span className="text-[7px] opacity-70">Download Oficial</span></span>}
             </button>
           )}
 
@@ -309,17 +312,24 @@ const AppContent: React.FC = () => {
             </div>
             <div className="flex items-center justify-center gap-2 mb-2">
               <ShieldCheck size={16} className="text-emerald-500" />
-              <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase italic tracking-tighter">Instalando App Real</h3>
+              <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase italic tracking-tighter">Preparando App</h3>
             </div>
           </div>
         </div>
       )}
 
-      {showInstallGuide && !isInstalling && (
+      {showInstallGuide && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md animate-in fade-in duration-300">
           <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm shadow-2xl border border-slate-200 dark:border-slate-800 p-6 text-center">
-            <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase italic tracking-tighter mb-4">Ação Necessária</h2>
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-relaxed mb-6">Use o menu do navegador para "Instalar Aplicativo" ou adicione à tela inicial.</p>
+            <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mx-auto mb-4 text-amber-600">
+              <Smartphone size={24} />
+            </div>
+            <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase italic tracking-tighter mb-4">Instalação Manual</h2>
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-relaxed mb-6">
+              O instalador automático está em espera. <br/>
+              1. Toque nos 3 pontinhos do Chrome <br/>
+              2. Selecione "Instalar Aplicativo"
+            </p>
             <button onClick={() => setShowInstallGuide(false)} className="w-full py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl transition-all shadow-lg">Entendi</button>
           </div>
         </div>
@@ -330,10 +340,25 @@ const AppContent: React.FC = () => {
   );
 };
 
-const App: React.FC = () => (
-  <Router>
-    <AppContent />
-  </Router>
-);
+const App: React.FC = () => {
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: any) => {
+      console.log('Evento beforeinstallprompt capturado com sucesso na raiz!');
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  }, []);
+
+  return (
+    <Router>
+      <AppContent deferredPrompt={deferredPrompt} setDeferredPrompt={setDeferredPrompt} />
+    </Router>
+  );
+};
 
 export default App;
